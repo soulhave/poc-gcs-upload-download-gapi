@@ -1,0 +1,145 @@
+<html>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <script src="https://apis.google.com/js/client.js"></script>
+    <script>
+        var handleUpload = function(event) {
+            var _file = event.target.files[0];
+            uploadFile(_file, "events-ciandt")
+        }
+
+        function uploadFile(fileData, bucket) {
+            var boundary = '-------314159265358979323846';
+            var delimiter = "\r\n--" + boundary + "\r\n";
+            var close_delim = "\r\n--" + boundary + "--";
+            var reader = new FileReader();
+            reader.readAsBinaryString(fileData);
+
+            reader.onload = function(e) {
+                var contentType = fileData.type || 'application/octet-stream';
+                var metadata = {
+                    'name': fileData.name,
+                    'mimeType': contentType
+                };
+                var base64Data = btoa(reader.result);
+                var multipartRequestBody =
+                    delimiter +
+                    'Content-Type: application/json\r\n\r\n' +
+                    JSON.stringify(metadata) +
+                    delimiter +
+                    'Content-Type: ' + contentType + '\r\n' +
+                    'Content-Transfer-Encoding: base64\r\n' +
+                    '\r\n' +
+                    base64Data +
+                    close_delim;
+
+                var request = gapi.client.request({
+                    'path': '/upload/storage/v1/b/' + bucket + '/o',
+                    'method': 'POST',
+                    'params': {
+                        'uploadType': 'multipart'
+                    },
+                    'headers': {
+                        'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'
+                    },
+                    'body': multipartRequestBody
+                });
+
+                try {
+                    request.execute(function(resp) {
+                        if (resp.hasOwnProperty("error")) {
+                            console.log('Erro estranho...');
+                            console.log(resp);
+                        } else {
+                            console.log('Success!!');
+                            console.log(resp);
+                        }
+                        $('#result').text(JSON.stringify(resp))
+                    });
+                } catch (e) {
+                    console.log(e);
+                }
+
+            };
+
+        }
+
+        //var apiKey = 'AIzaSyDuUpWTUDxtXL9UCJjw8n1Vb0nSgOQCrdY';
+        var clientId = '596664547229-bgl3ji956nge1ghe005m2170a5cn88pm.apps.googleusercontent.com';
+        var scopes = 'https://www.googleapis.com/auth/devstorage.full_control';
+        var API_VERSION = 'v1';
+
+        /**
+         * Set required API keys and check authentication status.
+         */
+        function handleClientLoad() {
+            //gapi.client.setApiKey(apiKey);
+            window.setTimeout(checkAuth, 1);
+        }
+        /**
+         * Authorize Google Cloud Storage API.
+         */
+        function checkAuth() {
+            gapi.auth.authorize({
+                client_id: clientId,
+                scope: scopes,
+                immediate: true
+            }, handleAuthResult);
+        }
+        /**
+         * Handle authorization.
+         */
+        function handleAuthResult(authResult) {
+            var authorizeButton = document.getElementById('authorize-button');
+
+            console.log(authResult)
+
+            if (authResult && !authResult.error) {
+                authorizeButton.style.visibility = 'hidden';
+                initializeApi();
+                console.log('Logged..')
+            } else {
+                authorizeButton.style.visibility = '';
+                authorizeButton.onclick = handleAuthClick;
+                console.log('Need loging..')
+            }
+        }
+
+        /**
+         * Handle authorization click event.
+         */
+        function handleAuthClick(event) {
+            gapi.auth.authorize({
+                client_id: clientId,
+                scope: scopes,
+                immediate: false
+            }, handleAuthResult);
+            return false;
+        }
+        /**
+         * Load the Google Cloud Storage API.
+         */
+        function initializeApi() {
+            gapi.client.load('storage', API_VERSION);
+        }
+
+        $(window)
+            .bind('load', function() {
+                handleClientLoad();
+                $('#fileToUpload').on('change', handleUpload);
+            });
+    </script>
+</head>
+
+<body>
+    <!--Add a button for the user to click to initiate auth sequence -->
+    <button id="authorize-button" style="visibility: hidden">Authorize</button>
+    <br/>Hello World!
+    <br/><input type="file" id="fileToUpload" />
+    <div id='result'>
+
+    </div>
+</body>
+
+</html>

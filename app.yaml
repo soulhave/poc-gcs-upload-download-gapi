@@ -1,0 +1,12 @@
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /index.html
+  mime_type: text/html
+  static_files: index.html
+  upload: index.html
+
+- url: /_bo/.*
+  script: version.app
