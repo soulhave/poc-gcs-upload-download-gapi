@@ -8,5 +8,10 @@ handlers:
   static_files: index.html
   upload: index.html
 
+- url: /drive
+  mime_type: text/html
+  static_files: drive.html
+  upload: drive.html
+
 - url: /_bo/.*
   script: version.app
